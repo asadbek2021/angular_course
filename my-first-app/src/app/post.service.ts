@@ -1,7 +1,7 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, HttpEventType, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Subject, throwError } from "rxjs";
-import { map, catchError } from "rxjs/operators";
+import { map, catchError,tap } from "rxjs/operators";
 import { IPost } from "./post.model";
 
 @Injectable({
@@ -15,7 +15,13 @@ export class PostService {
 
   createPost(title:string,content:string){
     let postData = {title,content};
-    this.http.post<Omit<IPost,'id'>>(`${this.baseUrl}/posts.json`,postData,{headers:{'Content-Type':'application/json'}}).subscribe(responseData => {
+    this.http.post<Omit<IPost,'id'>>(
+      `${this.baseUrl}/posts.json`,
+      postData,
+      {headers:{'Content-Type':'application/json'}, observe: 'response'}
+      )
+      .subscribe(responseData => {
+        console.log(responseData);
       this.fetchNeeded.next();
     }, error => this.error.next(error) )
   }
@@ -50,6 +56,10 @@ export class PostService {
 
   onDelete(id:string){
 
-  return this.http.delete(`${this.baseUrl}/posts/${id}.json`)
+  return this.http.delete(`${this.baseUrl}/posts/${id}.json`, {observe: 'events'}).pipe(tap(event=>{
+    if(event.type === HttpEventType.Response){
+      console.log(event.body);
+    }
+  }))
   }
 }
